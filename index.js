@@ -19,7 +19,15 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-    console.log("database connected");
+    const toolsCollection = client.db("mytools").collection("tools");
+
+    // load tools to client
+    app.get("/tools", async (req, res) => {
+      const query = {};
+      const cursor = toolsCollection.find(query);
+      const tools = await cursor.toArray();
+      res.send(tools);
+    });
   } finally {
   }
 }
