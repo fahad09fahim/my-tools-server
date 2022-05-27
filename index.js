@@ -41,6 +41,20 @@ async function run() {
       const result = await reviewCollection.insertOne(review);
       res.send(result);
     });
+    app.post("/order", async (req, res) => {
+      const order = req.body;
+      const query = {
+        name: order.productName,
+        available: order.quantity,
+      };
+      const exists = await toolsCollection.findOne(query);
+      if (exists) {
+        return res.send({ success: false, order: exists });
+      }
+      const result = await toolsCollection.insertOne(order);
+
+      res.send({ success: true, result });
+    });
   } finally {
   }
 }
