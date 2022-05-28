@@ -3,10 +3,9 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -40,6 +39,7 @@ async function run() {
     const reviewCollection = client.db("mytools").collection("reviews");
     const orderCollection = client.db("mytools").collection("order");
     const usersCollection = client.db("mytools").collection("users");
+    const paymentCollection = client.db("mytools").collection("payment");
 
     // load tools to client
     app.get("/tools", async (req, res) => {
@@ -89,6 +89,22 @@ async function run() {
       res.send(orders);
     });
 
+    app.patch("/order/:id", verifyJwt, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const result = await paymentCollection.insertOne(payment);
+      const updateOrders = await orderCollection.updateOne(filter, updateDoc);
+
+      res.send(updateOrders);
+    });
+
     app.post("/create-payment-intent", verifyJwt, async (req, res) => {
       const orders = req.body;
       const price = orders.price;
@@ -96,7 +112,7 @@ async function run() {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
-        payment_method_type: ["card"],
+        payment_method_types: ["card"],
       });
       res.send({ clientSecret: paymentIntent.client_secret });
     });
