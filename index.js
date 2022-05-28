@@ -86,6 +86,13 @@ async function run() {
       res.send(user);
     });
 
+    app.get("/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await usersCollection.findOne({ email: email });
+      const isAdmin = user.role === "admin";
+      res.send({ admin: isAdmin });
+    });
+
     app.put("/user/admin/:email", verifyJwt, async (req, res) => {
       const email = req.params.email;
       const requester = req.decoded.email;
@@ -119,21 +126,6 @@ async function run() {
       const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET);
       res.send({ result, token });
     });
-
-    // app.post("/order", async (req, res) => {
-    //   const order = req.body;
-    //   const query = {
-    //     name: order.productName,
-    //     available: order.quantity,
-    //   };
-    //   const exists = await toolsCollection.findOne(query);
-    //   if (exists) {
-    //     return res.send({ success: false, order: exists });
-    //   }
-    //   const result = await toolsCollection.insertOne(order);
-
-    //   res.send({ success: true, result });
-    // });
   } finally {
   }
 }
